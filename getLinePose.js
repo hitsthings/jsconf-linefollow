@@ -12,9 +12,15 @@ function getLinePose(pngData, options, next) {
 
     var png = new PNG(pngData);
     png.decode(function(data) {
-
+        console.log('image decoded');
         var edges = getRedEdges(data, png.width, png.height, options);
+        console.log('get edges');
         var longestLine = findLine(edges);
+
+        console.log('longest line', longestLine);
+        if (!longestLine) {
+            return null;
+        }
 
         var lineCenter = [
             (longestLine.ex - longestLine.sx) / 2 + longestLine.sx,
@@ -23,7 +29,7 @@ function getLinePose(pngData, options, next) {
         ];
 
         next({
-            angle : getAngle(longestLine),
+            angle : getAngle(longestLine.sx, longestLine.sy, longestLine.ex, longestLine.ey),
             xOffset : lineCenter[0] - edges.cols/2,
             yOffset : lineCenter[1] - edges.rows/2
         });
@@ -34,6 +40,16 @@ function getRedEdges(image, width, height, options) {
     var r = options.blur_radius|2;
     var kernel_size = (r+1) << 1;
     var img_u8 = getReds(image, width, height);
+
+    if (width * height > 100) {
+        var pyramid = new jsfeat.pyramid_t(4);
+        pyramid.allocate(width, height, jsfeat.U8_t | jsfeat.C1_t);
+        pyramid.build(img_u8);
+
+        img_u8 = pyramid.data[2];   
+    }
+
+    console.log(img_u8.cols, img_u8.rows, img_u8.data.length)
 
     jsfeat.imgproc.gaussian_blur(img_u8, img_u8, kernel_size, 0);
     jsfeat.imgproc.canny(img_u8, img_u8, options.low_threshold|20, options.high_threshold|50);

@@ -14,9 +14,12 @@ Navigator.createNavigator = function createNavigator(videoStream) {
 };
 
 Navigator.prototype._onData = function(data) {
+    console.log('got data');
     getLinePose(data, function(linePose) {
+        console.log('line pose: ', linePose);
+
         if (!linePose) {
-            this.trigger('rotate', 0.5);
+            this.emit('rotate', 0.5);
         }
 
         var normalizedAngle = linePose.angle > 180 ?
@@ -26,16 +29,16 @@ Navigator.prototype._onData = function(data) {
         normalizedAngle -= 1;
 
         if (normalizedAngle !== 0) {
-            this.trigger('rotate',  normalizedAngle);
+            this.emit('rotate',  normalizedAngle);
         }
 
         if (Math.abs(normalizedAngle) < 0.1) {
-            this.trigger('forward', 1);
+            this.emit('forward', 1);
         } else {
-            this.trigger('forward', 0);
-            this.trigger('land');
+            this.emit('forward', 0);
+            this.emit('land');
         }
-    });
+    }.bind(this));
 };
 
 module.exports = Navigator;
